@@ -1,11 +1,20 @@
 'use client'
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 
 export default function ChatRoom() {
     const [messages, setMessages] = useState<{ human: string, AI?: string }[]>([]);
     const [humanInput, setHumanInput] = useState("");
     const aiMessageRef = useRef("");
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const handleSubmit = async () => {
         if (humanInput == "") {
@@ -60,7 +69,7 @@ export default function ChatRoom() {
         <main className="w-full flex justify-center h-full">
             <div className=" md:w-3/5 h-full grid grid-rows-[20px_minmax(0,1fr)_auto] p-4">
                 <h1 className="text-cyan-700 ">Gemini Flash 1.5</h1>
-                <div className="bg-slate-900 my-2 overflow-y-scroll no-scrollbar p-3 md:p-5 rounded-sm">
+                <div className="bg-slate-900 my-2 overflow-y-scroll no-scrollbar p-3 md:p-5 rounded-sm" >
                     {
                         messages.length == 0 && (
 
@@ -89,7 +98,7 @@ export default function ChatRoom() {
                         </div>
                     ))}
 
-
+                    <div ref={messagesEndRef}></div>
                 </div>
                 <div className="input-box mt-3">
                     <textarea name="" id=""
