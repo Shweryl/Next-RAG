@@ -1,12 +1,31 @@
 'use client'
 
 import { useRef, useState, useEffect } from "react"
+import Image from "next/image";
+import Sidebar from "@/components/sidebar";
+import { useSearchParams } from "next/navigation";
 
 export default function ChatRoom() {
     const [messages, setMessages] = useState<{ human: string, AI?: string }[]>([]);
     const [humanInput, setHumanInput] = useState("");
     const aiMessageRef = useRef("");
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const [isTyping, setIsTyping] = useState<Boolean>(false);
+
+    const searchParams = useSearchParams();
+    const [topic, setTopic] = useState("general");
+
+    useEffect(() => {
+        const urlTopic = searchParams.get("topic");
+        const savedTopic = localStorage.getItem("chat_topic");
+
+        if (urlTopic) {
+            setTopic(urlTopic);
+            localStorage.setItem("chat_topic", urlTopic);
+        } else if (savedTopic) {
+            setTopic(savedTopic);
+        }
+    }, [searchParams]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -16,7 +35,10 @@ export default function ChatRoom() {
         scrollToBottom();
     }, [messages]);
 
+
     const handleSubmit = async () => {
+
+        const topic = localStorage.getItem("chat_topic");
         if (humanInput == "") {
             return;
         }
@@ -26,12 +48,18 @@ export default function ChatRoom() {
 
         aiMessageRef.current = "";
 
-        const source = new EventSource(`/api/chat_2?human=${encodeURIComponent(humanInput)}`);
+        handleEventQuery(humanInput);
+    };
+
+    const handleEventQuery = (input: string) => {
+        setIsTyping(true);
+        const source = new EventSource(`/api/rag?human=${encodeURIComponent(input)}&topic=${topic}`);
 
         source.onmessage = (event) => {
             const data = event.data;
 
             if (data === "[DONE]") {
+                setIsTyping(false);
                 source.close();
                 return;
             }
@@ -59,59 +87,92 @@ export default function ChatRoom() {
         };
 
         source.onerror = (error) => {
+            setIsTyping(false);
             console.error("EventSource failed:", error);
             source.close();
         };
-    };
+    }
+
+
+    const handleQuestionClick = (question: string) => {
+        setMessages((prev) => [...prev, { human: question }]);
+        setHumanInput("");
+
+        aiMessageRef.current = "";
+
+        handleEventQuery(question);
+    }
 
 
     return (
         <main className="w-full flex justify-center h-full">
+            <div className="w-1/5 h-full">
+                <Sidebar topic={topic} onSelectQuestion={handleQuestionClick} />
+            </div>
             <div className=" md:w-3/5 h-full grid grid-rows-[20px_minmax(0,1fr)_auto] p-4">
-                <h1 className="text-cyan-700 ">Gemini Flash 1.5</h1>
-                <div className="bg-slate-900 my-2 overflow-y-scroll no-scrollbar p-3 md:p-5 rounded-sm" >
+                <h1 className="text-cyan-700 ">Gemini Flash 2.5</h1>
+                <div className="bg-gradient-to-b from-slate-900 via-gray-800 to-slate-900 my-2 no-scrollbar overflow-y-scroll p-3 md:p-5 rounded-xl shadow-inner">
                     {
                         messages.length == 0 && (
 
                             <div className="flex items-center justify-center h-full">
-                                <p className="text-slate-600">What is your question?</p>
+                                <div className="text-center">
+                                    <Image
+                                        className="mx-auto"
+                                        src="/bot.png"
+                                        alt="Picture of the author"
+                                        width={50}
+                                        height={50}
+                                    />
+                                    <p className="text-slate-600 mt-2">Hello!</p>
+                                    <p className="text-slate-600">What would you like to know for today?</p>
+                                </div>
                             </div>
                         )
                     }
 
                     {messages && messages.map((message, index) => (
-                        <div key={index}>
-                            <div className="text-end mb-5">
-                                <p className="human-message px-4 py-2 max-w-[80%] bg-slate-800 inline-block rounded-l-lg rounded-tr-lg">
+                        <div key={index} className="flex flex-col gap-2 mb-2">
+                            <div className="flex justify-end">
+                                <p className="human-message text-sm px-4 py-2 max-w-[80%] bg-gray-800 text-gray-100 inline-block rounded-l-2xl rounded-tr-2xl shadow-md animate-fadeIn">
                                     {message.human}
                                 </p>
                             </div>
-                            {
-                                message.AI && (
-                                    <div className="mb-5">
-                                        <p className="ai-message px-4 py-2 max-w-[80%] bg-cyan-700 inline-block rounded-r-lg rounded-tl-lg">
-                                            {message.AI}
-                                        </p>
-                                    </div>
-                                )
-                            }
+                            {message.AI && (
+                                <div className="flex justify-start">
+                                    <p className="ai-message text-sm px-4 py-2 max-w-[80%] bg-cyan-600 text-white inline-block rounded-r-2xl rounded-tl-2xl shadow-md animate-fadeIn">
+                                        {message.AI}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     ))}
+
+                    {isTyping && (
+                        <div className="flex items-center gap-2 my-2">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-150"></div>
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-300"></div>
+                            {/* <p className="text-gray-400 text-sm">Gemini is typing...</p> */}
+                        </div>
+                    )}
+
 
                     <div ref={messagesEndRef}></div>
                 </div>
                 <div className="input-box mt-3">
+
                     <textarea name="" id=""
-                        placeholder="Press Enter for answer." value={humanInput}
+                        placeholder="Type your question..." value={humanInput}
                         onChange={(e) => setHumanInput(e.target.value)} onKeyUp={(e) => {
                             if (e.key === "Enter") {
                                 e.preventDefault();
                                 handleSubmit();
                             }
                         }}
-                        className="w-full p-3 bg-gray-900 rounded-sm" rows={3}></textarea>
+                        className="w-full p-3 bg-gray-900 text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200" rows={3}></textarea>
                 </div>
             </div>
-        </main>
+        </main >
     )
 }

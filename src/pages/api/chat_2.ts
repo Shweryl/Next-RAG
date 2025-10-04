@@ -23,7 +23,7 @@ export default async function ChatApi(req: NextApiRequest, res: NextApiResponse)
   try {
     const model = new ChatGoogleGenerativeAI({
       temperature: 0.7,
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       apiKey: process.env.GOOGLE_API_KEY,
       streaming: true,
       callbacks: [
