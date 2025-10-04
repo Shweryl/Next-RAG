@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
         for await (const chunk of stream) {
-            const token = chunk.delta ?? chunk.content ?? "";
+            const token =  chunk.content ?? "";
             if (token) {
                 res.write(`data: ${JSON.stringify({ token })}\n\n`);
             }
