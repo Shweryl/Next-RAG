@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react"
 import Image from "next/image";
 import Sidebar from "@/components/sidebar";
 import { useSearchParams } from "next/navigation";
+import { Menu } from 'lucide-react';
 
 export default function ChatRoom() {
     const [messages, setMessages] = useState<{ human: string, AI?: string }[]>([]);
@@ -14,6 +15,7 @@ export default function ChatRoom() {
 
     const searchParams = useSearchParams();
     const [topic, setTopic] = useState("general");
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         const urlTopic = searchParams.get("topic");
@@ -106,12 +108,22 @@ export default function ChatRoom() {
 
     return (
         <main className="w-full flex justify-center h-full">
-            <div className="w-1/5 h-full">
-                <Sidebar topic={topic} onSelectQuestion={handleQuestionClick} />
+            <div className="md:w-1/3 lg:1/5 h-full">
+                <Sidebar topic={topic} onSelectQuestion={handleQuestionClick} isOpen={isOpen}  onClose={() => setIsOpen(false)}/>
             </div>
-            <div className=" md:w-3/5 h-full grid grid-rows-[20px_minmax(0,1fr)_auto] p-4">
-                <h1 className="text-cyan-700 ">Gemini Flash 2.5</h1>
-                <div className="bg-gradient-to-b from-slate-900 via-gray-800 to-slate-900 my-2 no-scrollbar overflow-y-scroll p-3 md:p-5 rounded-xl shadow-inner">
+            <div className="md:w-2/3 lg:w-4/5 h-full grid grid-rows-[20px_minmax(0,1fr)_auto] p-4">
+                <div className="flex justify-between items-center">
+                    <div className="">
+                        <button
+                            className="md:hidden py-2 px-3 bg-cyan-500 text-white rounded shadow"
+                            onClick={() => setIsOpen(true)}
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <h1 className="text-cyan-700 ">Gemini Flash 2.5</h1>
+                </div>
+                <div className="bg-gradient-to-b from-slate-900 via-gray-800 to-slate-900 mt-4 mb-2 no-scrollbar overflow-y-scroll p-3 md:p-5 rounded-xl shadow-inner">
                     {
                         messages.length == 0 && (
 
