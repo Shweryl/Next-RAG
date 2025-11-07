@@ -16,3 +16,7 @@ HF_API_KEY=hugging_face_api
 
 npm install
 
+Run hugging face embedding model in base directory called "model"
+
+preembed data with "node src/scripts/embedPdf.js"
+
